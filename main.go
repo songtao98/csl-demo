@@ -5,8 +5,6 @@
 package main
 
 import (
-	"errors"
-	"github.com/cilium/ebpf/perf"
 	"log"
 	"os"
 	"time"
@@ -33,11 +31,11 @@ func main() {
 
 	// Load pre-compiled programs and maps into the kernel.
 	objs := bpfObjects{}
-	objs.Cgroup.Put(0, fd)
 	if err := loadBpfObjects(&objs, nil); err != nil {
 		log.Fatalf("loading objects: %v", err)
 	}
 	defer objs.Close()
+	objs.Cgroup.Put(0, fd)
 
 	// Open a tracepoint and attach the pre-compiled program.
 	// The first two arguments are taken from the following pathname:
@@ -62,11 +60,11 @@ func main() {
 
 	// Open a perf reader from userspace into the perf event array
 	// created earlier.
-	rd, err := perf.NewReader(objs.Events, os.Getpagesize())
-	if err != nil {
-		log.Fatalf("creating event reader: %s", err)
-	}
-	defer rd.Close()
+	// rd, err := perf.NewReader(objs.Events, os.Getpagesize())
+	//if err != nil {
+	//	log.Fatalf("creating event reader: %s", err)
+	//}
+	//defer rd.Close()
 
 	// todo: Read loop compute and report the CPU Schedule Latency every 10 seconds.
 	ticker := time.NewTicker(10 * time.Second)
@@ -75,16 +73,20 @@ func main() {
 	log.Println("Waiting for events..")
 	for range ticker.C {
 		// read raw record from BPF map
-		record, err := rd.Read()
-		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
-				log.Println("Received signal, exiting..")
-				return
-			}
-			log.Printf("reading from reader: %s", err)
-			continue
+		// record, err := rd.Read()
+		//if err != nil {
+		//	if errors.Is(err, perf.ErrClosed) {
+		//		log.Println("Received signal, exiting..")
+		//		return
+		//	}
+		//	log.Printf("reading from reader: %s", err)
+		//	continue
+		//}
+		var value uint64
+		if err := objs.Events.Lookup(mapKey, &value); err != nil {
+			log.Fatalf("reading map: %v", err)
 		}
-		log.Println("Record:", record)
+		log.Println("Record:", value)
 
 		// compute cpu sched latency
 		//value := handle_event(record)

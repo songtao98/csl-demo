@@ -33,9 +33,16 @@ struct {
 //	__uint(value_size, sizeof(u32));
 //} events SEC(".maps");
 
+//struct {
+//	__uint(type, BPF_MAP_TYPE_RINGBUF);
+//	__uint(max_entries, 256 * 1024);
+//} events SEC(".maps");
+
 struct {
-	__uint(type, BPF_MAP_TYPE_RINGBUF);
-	__uint(max_entries, 256 * 1024);
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__uint(max_entries, 4);
+	__type(key, u32);
+	__type(value, u64);
 } events SEC(".maps");
 
 /*
@@ -166,6 +173,8 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 	struct rqevent event = {};
 	u64 *tsp, delta, threshold, now;
 	struct args *argp;
+	u32 key     = 0;
+
 
 	prev_pid = ctx->prev_pid;
 	pid = ctx->next_pid;
@@ -197,7 +206,9 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 	// 向events 这个map里面，写入一条event消息，key就是BPF_F_CURRENT_CPU
 //	bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU,
 //			      &event, sizeof(event));
-    bpf_ringbuf_output(&events, &event, sizeof(event), 0);
+    //bpf_ringbuf_output(&events, &event, sizeof(event), 0);
+
+    bpf_map_update_elem(&events, &key, &delta, BPF_ANY);
 
 	bpf_map_delete_elem(&start, &pid);
 	return 0;
