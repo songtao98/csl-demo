@@ -35,7 +35,10 @@ func main() {
 		log.Fatalf("loading objects: %v", err)
 	}
 	defer objs.Close()
+
 	objs.Cgroup.Put(0, fd)
+	objs.Events.Put(0, 0)
+	objs.Events.Put(1, 0)
 
 	// Open a tracepoint and attach the pre-compiled program.
 	// The first two arguments are taken from the following pathname:
