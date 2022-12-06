@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
 )
@@ -16,8 +17,11 @@ import (
 // $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf csl.bpf.c -- -I./headers -I./csl-headers
 
-const mapKey uint32 = 0
-const counterKey uint32 = 1
+const (
+	mapKey                 uint32 = 0
+	counterKey             uint32 = 1
+	initDelay, initCounter uint64 = 0, 0
+)
 
 func main() {
 	cgroupPath := "/sys/fs/cgroup/perf_event/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod6497db01_04d2_4777_aad2_f4da0c54e3d8.slice/cri-containerd-c7ff7422d017ad9099ae4f56a0a81bb23442e55258709f171568aedb7a7bceb0.scope"
@@ -37,9 +41,9 @@ func main() {
 	}
 	defer objs.Close()
 
-	objs.Cgroup.Put(0, fd)
-	objs.Events.Put(0, 0)
-	objs.Events.Put(1, 0)
+	objs.Cgroup.Put(uint32(0), uint32(fd))
+	objs.Events.Put(mapKey, initDelay)
+	objs.Events.Put(counterKey, initCounter)
 
 	// Open a tracepoint and attach the pre-compiled program.
 	// The first two arguments are taken from the following pathname:
@@ -102,8 +106,8 @@ func main() {
 		}
 		log.Println("Avg Delay: ", avgDelay)
 
-		objs.Events.Put(0, 0)
-		objs.Events.Put(1, 0)
+		objs.Events.Update(mapKey, initDelay, ebpf.UpdateAny)
+		objs.Events.Update(counterKey, initCounter, ebpf.UpdateAny)
 
 		// compute cpu sched latency
 		//value := handle_event(record)
