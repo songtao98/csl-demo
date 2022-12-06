@@ -216,10 +216,11 @@ int handle_switch(struct sched_switch_tp_args *ctx)
     if (!lastcounter)
     {
         lastcounter = initcounter;
-        bpf_map_update_elem(&events, &key, initlast, BPF_ANY);
+        last = initlast;
     }
+    else
+        last = bpf_map_lookup_elem(&events, &key);
 
-    last = bpf_map_lookup_elem(&events, &key);
     *lastcounter = *lastcounter + 1;
     delta = (delta + *last);
     bpf_map_update_elem(&events, &counterkey, lastcounter, BPF_ANY);
