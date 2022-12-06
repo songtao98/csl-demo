@@ -175,7 +175,7 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 	struct args *argp;
 	u32 key     = 0;
 	u32 counterkey = 1;
-    u64 initcounter = 0;
+    u64 *initcounter = 0;
     u64 *last, *lastcounter;
 
 
@@ -213,9 +213,10 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 
     lastcounter = bpf_map_lookup_elem(&events, &counterkey);
     if (!lastcounter)
-        lastcounter = &initcounter;
+        lastcounter = initcounter;
+
     last = bpf_map_lookup_elem(&events, &key);
-    *lastcounter += 1;
+    *lastcounter = *lastcounter + 1;
     delta = (delta + *last);
     bpf_map_update_elem(&events, &counterkey, lastcounter, BPF_ANY);
 
