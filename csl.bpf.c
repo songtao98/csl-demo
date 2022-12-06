@@ -40,7 +40,7 @@ struct {
 
 struct {
 	__uint(type, BPF_MAP_TYPE_ARRAY);
-	__uint(max_entries, 4);
+	__uint(max_entries, 2);
 	__type(key, u32);
 	__type(value, u64);
 } events SEC(".maps");
@@ -174,6 +174,9 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 	u64 *tsp, delta, threshold, now;
 	struct args *argp;
 	u32 key     = 0;
+	u32 counterkey = 1;
+    u64 initcounter = 0;
+    u64 *last, *lastcounter;
 
 
 	prev_pid = ctx->prev_pid;
@@ -207,6 +210,14 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 //	bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU,
 //			      &event, sizeof(event));
     //bpf_ringbuf_output(&events, &event, sizeof(event), 0);
+
+    lastcounter = bpf_map_lookup_elem(&events, &counterkey);
+    if (!lastcounter)
+        lastcounter = &initcounter;
+    last = bpf_map_lookup_elem(&events, &key);
+    *lastcounter += 1;
+    delta = (delta + *last);
+    bpf_map_update_elem(&events, &counterkey, lastcounter, BPF_ANY);
 
     bpf_map_update_elem(&events, &key, &delta, BPF_ANY);
 

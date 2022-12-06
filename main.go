@@ -87,6 +87,11 @@ func main() {
 			log.Fatalf("reading map: %v", err)
 		}
 		log.Println("Record:", value)
+		var counter uint64
+		if err := objs.Events.Lookup(1, &counter); err != nil {
+			log.Fatalf("reading map: %v", err)
+		}
+		log.Println("Counter:", counter)
 
 		// compute cpu sched latency
 		//value := handle_event(record)
