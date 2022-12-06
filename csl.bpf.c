@@ -164,6 +164,7 @@ int handle__sched_wakeup_new(struct sched_wakeup_tp_args *ctx)
 SEC("tp/sched/sched_switch")
 int handle_switch(struct sched_switch_tp_args *ctx)
 {
+    // seems like only works on cgroup v2
     if (!bpf_current_task_under_cgroup(&cgroup, 0))
         return 0;
 
@@ -212,6 +213,9 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 
     lastcounter = bpf_map_lookup_elem(&events, &counterkey);
     if (!lastcounter)
+        return 0;
+    last = bpf_map_lookup_elem(&events, &key);
+    if (!last)
         return 0;
 
     *lastcounter = *lastcounter + 1;

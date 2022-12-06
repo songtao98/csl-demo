@@ -96,6 +96,14 @@ func main() {
 			log.Fatalf("reading map: %v", err)
 		}
 		log.Println("Counter:", counter)
+		avgDelay := uint64(0)
+		if counter >= 0 {
+			avgDelay = value / counter
+		}
+		log.Println("Avg Delay: ", avgDelay)
+
+		objs.Events.Put(0, 0)
+		objs.Events.Put(1, 0)
 
 		// compute cpu sched latency
 		//value := handle_event(record)
