@@ -17,6 +17,7 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf csl.bpf.c -- -I./headers -I./csl-headers
 
 const mapKey uint32 = 0
+const counterKey uint32 = 1
 
 func main() {
 	cgroupPath := "/sys/fs/cgroup/perf_event/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod6497db01_04d2_4777_aad2_f4da0c54e3d8.slice/cri-containerd-c7ff7422d017ad9099ae4f56a0a81bb23442e55258709f171568aedb7a7bceb0.scope"
@@ -91,7 +92,7 @@ func main() {
 		}
 		log.Println("Record:", value)
 		var counter uint64
-		if err := objs.Events.Lookup(1, &counter); err != nil {
+		if err := objs.Events.Lookup(counterKey, &counter); err != nil {
 			log.Fatalf("reading map: %v", err)
 		}
 		log.Println("Counter:", counter)
