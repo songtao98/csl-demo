@@ -146,3 +146,15 @@ struct pt_regs {
 	/* top of stack page */
 };
 #endif /* __TARGET_ARCH_x86 */
+
+typedef int __kernel_pid_t;
+
+typedef __kernel_pid_t pid_t;
+
+struct trace_entry {
+	short unsigned int type;
+	unsigned char flags;
+	unsigned char preempt_count;
+	int pid;
+};
+

@@ -74,6 +74,7 @@ type bpfMapSpecs struct {
 	Argmap *ebpf.MapSpec `ebpf:"argmap"`
 	Cgroup *ebpf.MapSpec `ebpf:"cgroup"`
 	Events *ebpf.MapSpec `ebpf:"events"`
+	Pids   *ebpf.MapSpec `ebpf:"pids"`
 	Start  *ebpf.MapSpec `ebpf:"start"`
 }
 
@@ -99,6 +100,7 @@ type bpfMaps struct {
 	Argmap *ebpf.Map `ebpf:"argmap"`
 	Cgroup *ebpf.Map `ebpf:"cgroup"`
 	Events *ebpf.Map `ebpf:"events"`
+	Pids   *ebpf.Map `ebpf:"pids"`
 	Start  *ebpf.Map `ebpf:"start"`
 }
 
@@ -107,6 +109,7 @@ func (m *bpfMaps) Close() error {
 		m.Argmap,
 		m.Cgroup,
 		m.Events,
+		m.Pids,
 		m.Start,
 	)
 }

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -24,6 +25,12 @@ const (
 )
 
 func main() {
+	fmt.Print("Enter a pid: ")
+	var number int32
+	_, err := fmt.Fscan(os.Stdin, &number)
+	if err != nil {
+		fmt.Println(err)
+	}
 	cgroupPath := "/sys/fs/cgroup/perf_event/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod6497db01_04d2_4777_aad2_f4da0c54e3d8.slice/cri-containerd-c7ff7422d017ad9099ae4f56a0a81bb23442e55258709f171568aedb7a7bceb0.scope"
 	f, _ := os.Open(cgroupPath)
 	fd := f.Fd()
@@ -41,6 +48,10 @@ func main() {
 	}
 	defer objs.Close()
 
+	args := &bpfArgs{
+		TargPid: number,
+	}
+	objs.Argmap.Put(uint32(0), args)
 	objs.Cgroup.Put(uint32(0), uint32(fd))
 	objs.Events.Put(mapKey, initDelay)
 	objs.Events.Put(counterKey, initCounter)
@@ -94,17 +105,26 @@ func main() {
 		if err := objs.Events.Lookup(mapKey, &value); err != nil {
 			log.Fatalf("reading map: %v", err)
 		}
-		log.Println("Record:", value)
+		log.Printf("Record: %vns\n", value)
 		var counter uint64
 		if err := objs.Events.Lookup(counterKey, &counter); err != nil {
 			log.Fatalf("reading map: %v", err)
 		}
-		log.Println("Counter:", counter)
+		log.Printf("Counter: %vswitches\n", counter)
 		avgDelay := uint64(0)
 		if counter >= 0 {
 			avgDelay = value / counter
 		}
-		log.Println("Avg Delay: ", avgDelay)
+		log.Printf("Avg Delay: %vns\n", avgDelay)
+
+		if err := objs.Pids.Lookup(mapKey, &value); err != nil {
+			log.Fatalf("current pid error: %v", err)
+		}
+		log.Printf("current pid: %vns\n", value)
+		if err := objs.Pids.Lookup(counterKey, &counter); err != nil {
+			log.Fatalf("ctx pid error: %v", err)
+		}
+		log.Printf("ctx pid: %v\n", counter)
 
 		objs.Events.Update(mapKey, initDelay, ebpf.UpdateAny)
 		objs.Events.Update(counterKey, initCounter, ebpf.UpdateAny)

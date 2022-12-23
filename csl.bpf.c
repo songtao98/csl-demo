@@ -1,7 +1,10 @@
 #include "vmlinux.h"
+#include "api.h"
+//#include "common.h"
 #include "bpf_helpers.h"
-#include "sched_jit.h"
+//#include "sched_jit.h"
 #include "csl.h"
+//#include <linux/pid.h>
 
 #define TASK_RUNNING	0
 #define _(P) ({typeof(P) val = 0; bpf_probe_read(&val, sizeof(val), &P); val;})
@@ -44,6 +47,13 @@ struct {
 	__type(key, u32);
 	__type(value, u64);
 } events SEC(".maps");
+
+struct {
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__uint(max_entries, 2);
+	__type(key, u32);
+	__type(value, u32);
+} pids SEC(".maps");
 
 /*
  * the return value type can only be assigned to 0,
@@ -168,6 +178,8 @@ int handle_switch(struct sched_switch_tp_args *ctx)
     if (!bpf_current_task_under_cgroup(&cgroup, 0))
         return 0;
 
+    struct task_struct *task = (struct task_struct *)get_current_task();
+    pid_t current_task_pid;
 	int cpuid;
 	u32 pid, prev_pid;
 	long int prev_state;
@@ -178,6 +190,7 @@ int handle_switch(struct sched_switch_tp_args *ctx)
 	u32 counterkey = 1;
     u64 *last, *lastcounter;
 
+    current_task_pid = task->pid;
 
 	prev_pid = ctx->prev_pid;
 	pid = ctx->next_pid;
@@ -224,6 +237,9 @@ int handle_switch(struct sched_switch_tp_args *ctx)
     bpf_map_update_elem(&events, &counterkey, lastcounter, BPF_ANY);
     bpf_map_update_elem(&events, &key, &delta, BPF_ANY);
 
+    bpf_map_update_elem(&pids, &counterkey, &pid, BPF_ANY);
+    bpf_map_update_elem(&pids, &key, &current_task_pid, BPF_ANY);
+// todo delete start
 	bpf_map_delete_elem(&start, &pid);
 	return 0;
 }
